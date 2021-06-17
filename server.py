@@ -34,7 +34,7 @@ def get_sort():
         if data.get('token'):
             token = data['token']
             if token in tasks.keys():
-                if not isinstance(tasks[token], False):
+                if tasks[token] != False:
                     return Response(
                         json.dumps({'array': tasks[token]}),
                         content_type='application/json',
