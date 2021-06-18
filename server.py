@@ -26,11 +26,22 @@ def calc_hash(addr):
     current_timestamp = time.time()
     return hashlib.md5(f'{current_timestamp}{addr}'.encode()).hexdigest()
 
-@app.route('/api/sorting', methods=['POST'])
+@app.route('/api/sorting', methods=['GET', 'POST'])
 def get_sort():
+    data = request.get_json()
     if request.method == 'POST':
-        data = request.get_json()
+        if data.get('array'):
+            # TRY TO SORT ARRAY
+            hashed_ts = calc_hash(request.remote_addr)
+            r.set(hashed_ts, '')
+            sorting_type = data.get('sort_reverse') if isinstance(data.get('sort_reverse'), bool) else False
+            sort_array.delay(data['array'], hashed_ts, sorting_type)
+            return Response(json.dumps({'token': hashed_ts}), content_type='application/json', status=200)
 
+        else:
+            return Response(status=400, response = 'Response without \'array\' in JSON. Check right response structure')
+
+    elif request.method == 'GET':
         if data.get('token'):
             # CHECK OUR ARRAY BY TOKEN
             token = data['token']
@@ -43,17 +54,8 @@ def get_sort():
                     return Response(json.dumps({'array': 'in progress'}), content_type='application/json', status=200)
             else:
                 return Response(status=400, response=f'Can\'t find token {token} in DB')
-
-        elif data.get('array'):
-            # TRY TO SORT ARRAY
-            hashed_ts = calc_hash(request.remote_addr)
-            r.set(hashed_ts, '')
-            sorting_type = data.get('sort_reverse') if isinstance(data.get('sort_reverse'), bool) else False
-            sort_array.delay(data['array'], hashed_ts, sorting_type)
-            return Response(json.dumps({'token': hashed_ts}), content_type='application/json', status=200)
-
         else:
-            return Response(status=400, response = 'Response without \'array\' or \'token\'in JSON. Check right response structure')
+            return Response(status=400, response = 'Response without \'token\' in JSON. Check right response structure')
 
 if __name__ == '__main__':
     r.flushall()
