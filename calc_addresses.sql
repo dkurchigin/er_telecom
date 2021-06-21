@@ -1,0 +1,1 @@
+SELECT DATE_SUB(date_, INTERVAL (DAYOFMONTH(date_) - 1) DAY) as 'месяц', count(*) as 'количество адресов' FROM history WHERE date_ >= DATE_SUB(CURRENT_DATE(), INTERVAL 2 YEAR) GROUP BY MONTH(date_), YEAR(date_);
